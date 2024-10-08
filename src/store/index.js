@@ -16,7 +16,9 @@ export default new Vuex.Store({
     archiveToken: '',
     userIsAuthenticated: false,
     profile: EMPTY_PROFILE_DATA,
-    urls: {}
+    urls: {},
+    downloadPending: false,
+    downloadError: false,
   },
   mutations: {
     setRuntimeConfig(state, payload) {
@@ -47,6 +49,16 @@ export default new Vuex.Store({
     },
     toggleStaffDataInspector(state) {
       state.inspectorViewEnabled = state.inspectorViewEnabled ? false : true;
+    },
+    setDownloadPending(state) {
+      state.downloadPending = true;
+    },
+    setDownloadStatic(state) {
+      state.downloadPending = false;
+      state.downloadError = false;
+    },
+    setDownloadError(state) {
+      state.downloadError = true;
     }
   },
   actions: {

@@ -8,8 +8,8 @@
     <b-col :md="sidebarWidth">
       <b-form @submit="onSubmit" @reset="onReset">
         <b-form-group id="input-group-daterange" class="my-1">
-          <date-picker 
-            v-model=selectedTimeRange 
+          <date-picker
+            v-model=selectedTimeRange
             range
             :clearable="false"
             ref="datePicker"
@@ -160,13 +160,18 @@
       <b-row class="mb-1">
         <b-col>
           <b-dropdown
-            :split-class="{ disabled: selected.length <= 0 || preventDownloadUncompressed() }"
+            :split-class="{ disabled: selected.length <= 0 || preventDownloadUncompressed(),
+            'btn-danger': downloadError}"
             split
             variant="primary"
             split-href=""
             @click="downloadFiles"
+
           >
-            <template #button-content>Download {{ selected.length }}</template>
+            <template #button-content>
+              <b-spinner v-if="downloadPending" small type="border" class="mr-2"></b-spinner>
+              Download {{ selected.length }}
+            </template>
             <b-dropdown-form>
               <b-form-group v-slot="{ ariaDescribedby }">
                 <b-form-radio v-model="dltype" :aria-describedby="ariaDescribedby" name="dltype" value="zip-compressed">
@@ -584,27 +589,27 @@ export default {
       }
     },
     datepickerShortcuts: function() {
-      return [{text: "This Semester", 
+      return [{text: "This Semester",
                onClick: () => {
                 return[this.filterDateRangeOptions["This Semester"][0].toJSDate(), this.filterDateRangeOptions["This Semester"][1].toJSDate()]
                }
               },
-               {text: "Last Semester", 
+               {text: "Last Semester",
                onClick: () => {
                 return[this.filterDateRangeOptions["Last Semester"][0].toJSDate(), this.filterDateRangeOptions["Last Semester"][1].toJSDate()]
                }
               },
-               {text: "Last 7 Days", 
+               {text: "Last 7 Days",
                onClick: () => {
                 return[this.filterDateRangeOptions["Last 7 Days"][0].toJSDate(), this.filterDateRangeOptions["Last 7 Days"][1].toJSDate()]
                }
               },
-               {text: "Last 30 Days", 
+               {text: "Last 30 Days",
                onClick: () => {
                 return[this.filterDateRangeOptions["Last 30 Days"][0].toJSDate(), this.filterDateRangeOptions["Last 30 Days"][1].toJSDate()]
                }
               },
-               {text: "All Time", 
+               {text: "All Time",
                onClick: () => {
                 if (this.allTimeAllowed) {
                   return[this.filterDateRangeOptions["All Time"][0].toJSDate(), this.filterDateRangeOptions["All Time"][1].toJSDate()]
@@ -697,6 +702,12 @@ export default {
     },
     totalRows: function() {
       return !this.data.count_estimated ? this.data.count : Number.MAX_SAFE_INTEGER;
+    },
+    downloadPending: function() {
+      return this.$store.state.downloadPending;
+    },
+    downloadError: function() {
+      return this.$store.state.downloadError;
     }
   },
   created: function() {
@@ -737,7 +748,7 @@ export default {
     onDatePickerChange: function() {
       let start = DateTime.fromJSDate(this.selectedTimeRange[0])
       let end = DateTime.fromJSDate(this.selectedTimeRange[1])
-      
+
       this.queryParams.start = start.startOf('day').toFormat(this.getDateFormat());
       this.queryParams.end = end.endOf('day').toFormat(this.getDateFormat());
 
@@ -1068,8 +1079,8 @@ export default {
   cursor: pointer;
 }
 </style>
-<!-- 
-Make table header position relative to avoid horizontal overflow. 
+<!--
+Make table header position relative to avoid horizontal overflow.
 Should be fixed in boostrap-vue 2.22.0
 https://github.com/bootstrap-vue/bootstrap-vue/issues/6326
 -->
@@ -1088,7 +1099,7 @@ th {
   width: 100%;
 }
 
-.mx-icon-calendar {  
+.mx-icon-calendar {
   display: none;
 }
 

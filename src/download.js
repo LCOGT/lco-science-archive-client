@@ -1,9 +1,10 @@
 import $ from 'jquery';
-import 'jquery-file-download';
+import { saveAs } from 'file-saver';
+import store from './store';
 
 export { downloadZip, downloadWget };
 
-function downloadZip(frameIds, uncompress, catalog, archiveRoot, archiveToken) {
+async function downloadZip(frameIds, uncompress, catalog, archiveRoot, archiveToken) {
   let postData = {};
 
   frameIds.forEach(function(value, i) {
@@ -13,9 +14,27 @@ function downloadZip(frameIds, uncompress, catalog, archiveRoot, archiveToken) {
   postData['uncompress'] = uncompress;
   postData['catalog_only'] = catalog;
 
-  $.fileDownload(`${archiveRoot}/frames/zip/`, {
-    httpMethod: 'POST',
-    data: postData
+  store.commit('setDownloadPending');
+  await $.ajax({
+    url: `${archiveRoot}/frames/zip/`,
+    type: 'POST',
+    data: postData,
+    xhrFields: {
+      responseType: 'blob' // Important for handling binary data
+    },
+    success: function(data) {
+      const blob = new Blob([data], { type: 'application/zip' });
+      saveAs(blob, 'download.zip');
+      console.log('File downloaded successfully');
+      store.commit('setDownloadStatic');
+    },
+    error: function(error) {
+      console.error('Error downloading the file', error);
+      store.commit('setDownloadError');
+      setTimeout(() => {
+        store.commit('setDownloadStatic');
+      }, 3000);
+    }
   });
 }
 
