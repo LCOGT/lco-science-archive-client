@@ -1,42 +1,7 @@
 import $ from 'jquery';
-import { saveAs } from 'file-saver';
-import store from './store';
+export { downloadWget };
 
-export { downloadZip, downloadWget };
 
-async function downloadZip(frameIds, uncompress, catalog, archiveRoot, archiveToken) {
-  let postData = {};
-
-  frameIds.forEach(function(value, i) {
-    postData[`frame_ids[${i}]`] = value;
-  });
-  postData['auth_token'] = archiveToken;
-  postData['uncompress'] = uncompress;
-  postData['catalog_only'] = catalog;
-
-  store.commit('setDownloadPending');
-  await $.ajax({
-    url: `${archiveRoot}/frames/zip/`,
-    type: 'POST',
-    data: postData,
-    xhrFields: {
-      responseType: 'blob' // Important for handling binary data
-    },
-    success: function(data) {
-      const blob = new Blob([data], { type: 'application/zip' });
-      saveAs(blob, 'download.zip');
-      console.log('File downloaded successfully');
-      store.commit('setDownloadStatic');
-    },
-    error: function(error) {
-      console.error('Error downloading the file', error);
-      store.commit('setDownloadError');
-      setTimeout(() => {
-        store.commit('setDownloadStatic');
-      }, 3000);
-    }
-  });
-}
 
 function generateScript(frameIds, archiveToken, archiveRoot, callback) {
   $.get('scripts/download_script.sh', function(data) {

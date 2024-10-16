@@ -17,8 +17,6 @@ export default new Vuex.Store({
     userIsAuthenticated: false,
     profile: EMPTY_PROFILE_DATA,
     urls: {},
-    downloadPending: false,
-    downloadError: false,
   },
   mutations: {
     setRuntimeConfig(state, payload) {

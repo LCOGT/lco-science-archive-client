@@ -348,7 +348,8 @@ import 'bootstrap-daterangepicker-v2/daterangepicker.css';
 import { OCSMixin, OCSUtil } from 'ocs-component-lib';
 import { DateTime } from 'luxon';
 import { itemInList, removeItemFromList } from '@/util.js';
-import { downloadZip, downloadWget } from '@/download.js';
+import { downloadWget } from '@/download.js';
+import { saveAs } from 'file-saver';
 import AggregatedOptionsSelect from '@/components/AggregatedOptionsSelect.vue';
 import SimpleSelect from '@/components/SimpleSelect.vue';
 import TargetLookup from '@/components/TargetLookup.vue';
@@ -386,6 +387,8 @@ export default {
       selectedTimeRange: null,
       filterDateRangeOptions: filterDateRangeOptions,
       alertModalMessage: '',
+      downloadPending: false,
+      downloadError: false,
       perPageOptions: [
         { value: '20', text: '20 rows per page' },
         { value: '50', text: '50 rows per page' },
@@ -703,12 +706,6 @@ export default {
     totalRows: function() {
       return !this.data.count_estimated ? this.data.count : Number.MAX_SAFE_INTEGER;
     },
-    downloadPending: function() {
-      return this.$store.state.downloadPending;
-    },
-    downloadError: function() {
-      return this.$store.state.downloadError;
-    }
   },
   created: function() {
     this.updateFilters();
@@ -881,16 +878,66 @@ export default {
       if (this.dltype === 'zip-compressed' || this.dltype === 'zip-uncompressed') {
         let uncompress = this.dltype === 'zip-compressed' ? false : true;
         let catalog = false;
-        downloadZip(frameIds, uncompress, catalog, this.archiveApiUrl, archiveToken);
+        this.downloadZip(frameIds, uncompress, catalog, this.archiveApiUrl, archiveToken);
       }
       else if (this.dltype === 'zip-catalog') {
         let uncompress = false;
         let catalog = true;
-        downloadZip(frameIds, uncompress, catalog, this.archiveApiUrl, archiveToken);
+        this.downloadZip(frameIds, uncompress, catalog, this.archiveApiUrl, archiveToken);
       }
       else if (this.dltype === 'wget') {
         downloadWget(frameIds, archiveToken, this.archiveApiUrl);
       }
+    },
+    async downloadZip (frameIds, uncompress, catalog, archiveRoot, archiveToken) {
+      let postData = {};
+
+      frameIds.forEach(function(value, i) {
+        postData[`frame_ids[${i}]`] = value;
+      });
+      postData['auth_token'] = archiveToken;
+      postData['uncompress'] = uncompress;
+      postData['catalog_only'] = catalog;
+
+      this.downloadPending = true;
+      await $.ajax({
+        url: `${archiveRoot}/frames/zip/`,
+        type: 'POST',
+        data: postData,
+        xhrFields: {
+          responseType: 'blob', // Important for handling binary data
+          withCredentials: true
+        },
+        crossDomain: true,
+        success: (data, status, xhr) => {
+          const allHeaders = xhr.getAllResponseHeaders();
+          console.log('All Response Headers:', allHeaders);
+
+          const blob = new Blob([data], { type: 'application/zip' });
+          console.log(xhr);
+          // Log all response headers
+          const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+          console.log('contentDisposition', contentDisposition);
+          let filename = 'download.zip'; // Default filename
+          if (contentDisposition) {
+            const matches = /filename="([^"]+)"/.exec(contentDisposition);
+            if (matches && matches[1]) {
+              filename = matches[1];
+            }
+          }
+          // rename to correct filename from backend
+          saveAs(blob, filename);
+          console.log('File downloaded successfully');
+          this.downloadPending = false;
+        },
+        error: (error) => {
+          console.error('Error downloading the file', error);
+          this.downloadError = true;
+          setTimeout(() => {
+            this.downloadError = false;
+          }, 3000);
+        }
+      });
     },
     getReductionLevelText: function (numericReductionLevel, telescopeId) {
       // Given the numeric reduction level and telescope ID, get a human readable representation of the reduction level.
