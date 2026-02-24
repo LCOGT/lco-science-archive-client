@@ -687,16 +687,6 @@ export default {
       }
       return '';
     },
-    reductionLevelOptions: function() {
-      let options = JSON.parse(this.$store.state.urls.reductionLevelOptions);
-      let dropdownOptions = [];
-      // add default "All" option when reduction_level isn't specified
-      dropdownOptions.push({ "value": "", "text": "All" });
-      for (const [value, text] of Object.entries(options)) {
-        dropdownOptions.push({"value": String(value), "text": String(text)})
-        }
-      return dropdownOptions;
-    },
     archiveApiUrl: function() {
       return this.$store.state.urls.archiveApiUrl;
     },
@@ -973,8 +963,6 @@ export default {
         end: defaultRange[1].toFormat(this.getDateFormat()),
         id: '',
         covers: '',
-        // keep public as undefined for now, we will set it for users as appropriate on creation of the component
-        public: undefined,
         ordering: '',
         limit: 20,
         offset: 0,
