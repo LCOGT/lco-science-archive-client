@@ -52,21 +52,11 @@ $.ajax({
 
   // Initialize archive token if it is available in local storage already
   store.commit('initializeArchiveToken');
-
-  // Initialize the data inspector state based on local storage
   store.commit('initializeStaffDataInspector');
 
-  store
-    .dispatch('getProfileData')
-    .then(() => {
-      new Vue({
-        router,
-        store,
-        render: h => h(App)
-      }).$mount('#app');
-    })
-    .catch(() => {
-      // TODO: Display error page
-      console.log('Error getting profile data');
-    });
+  new Vue({
+    router,
+    store,
+    render: h => h(App)
+  }).$mount('#app');
 });

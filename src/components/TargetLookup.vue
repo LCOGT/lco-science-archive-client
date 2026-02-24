@@ -82,8 +82,8 @@ export default {
               this.setLookupStatus(response.error);
             } else {
               this.setLookupStatus('');
-              this.point.x = response.ra.replace(/ /g, ':');
-              this.point.y = response.dec.replace(/ /g, ':');
+              this.point.x = response.ra.toString();
+              this.point.y = response.dec.toString();
               this.onPointUpdate();
             }
           })

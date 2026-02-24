@@ -308,7 +308,7 @@
         <b-row>
           <b-col>
             <div class="text-right text-muted">
-              Showing {{ currentPageRange.start }} to {{ currentPageRange.end }} of {{ data.count_estimated ? '~' : '' }}{{ data.count }} row{{ data.count === 1 ? '' : 's' }}
+              Showing {{ currentPageRange.start }} to {{ currentPageRange.end }} of {{ counteEstimatedSymbol }}{{ dataCount }} row{{ dataCount === 1 ? '' : 's' }}
             </div>
           </b-col>
         </b-row>
@@ -317,7 +317,7 @@
             <ocs-pagination
               table-id="archive-table"
               :per-page="queryParams.limit"
-              :total-rows="totalRows"
+              :total-rows="dataCount"
               :current-page="currentPage"
               :display-per-page-dropdown="true"
               :pagination-attrs="{ 'first-number': true, 'last-number': data.count_estimated ? false : true, 'hide-goto-end-buttons': data.count_estimated ? true : false }"
@@ -653,6 +653,40 @@ export default {
         }
       }
     },
+    dataCount: function() {
+      if (this.data.count_estimated) {
+        let limit = _.toNumber(this.queryParams.limit);
+        let offset = _.toNumber(this.queryParams.offset);
+        if (this.data.results.length < limit) {
+          // If the length of results is < our limi, then there are no more results so we can cap the estimated count
+          return offset + this.data.results.length;
+        }
+        else {
+          // We know we have a count at least as large as our current offset and limit
+          // Add 1 so we have another page to check
+          return _.max([this.data.count, offset + limit +1])
+        }
+      }
+      else {
+        // If count is exact, then use that always
+        return this.data.count;
+      }
+    },
+    counteEstimatedSymbol: function() {
+      if (this.data.count_estimated) {
+        let limit = _.toNumber(this.queryParams.limit);
+        let offset = _.toNumber(this.queryParams.offset);
+        if (this.data.count <= offset + limit) {
+          // If the count equals our modified dataCount, then it is an "at least" count
+          return '>';
+        }
+        else {
+          // Otherwise the count is approximate, it might be greater or less then
+          return '~';
+        }
+      }
+      return '';
+    },
     archiveApiUrl: function() {
       return this.$store.state.urls.archiveApiUrl;
     },
@@ -674,8 +708,8 @@ export default {
       let limit = _.toNumber(this.queryParams.limit);
       let offset = _.toNumber(this.queryParams.offset);
       return {
-        start: _.min([offset + 1, this.data.count]),
-        end: _.min([offset + limit, this.data.count])
+        start: _.min([offset + 1, this.dataCount]),
+        end: _.min([offset + limit, this.dataCount])
       };
     },
     userIsStaff: function() {
@@ -700,7 +734,7 @@ export default {
     }
   },
   created: function() {
-    this.updateFilters();
+    this.getAllFiltersAndUpdateOptions();
   },
   mounted: function() {
     // Set up alert modal to clear message when it it hidden
@@ -709,7 +743,6 @@ export default {
         this.alertModalMessage = '';
       }
     });
-    this.setSelectedFields();
   },
   methods: {
     exportTable: function(type) {
@@ -953,8 +986,6 @@ export default {
       // when refreshing data to display, go to the first page of results.
       this.goToFirstPage();
       this.update();
-      // update the available selections based on the newly-selected params
-      this.updateFilters();
     },
     onSuccessfulDataRetrieval: function() {
       // if the expand_all param is specified in the query params, make sure we automatically expand all the rows
@@ -966,48 +997,7 @@ export default {
       // optionKey must be (is expected to be) one of the keys inside allAggregatedOptions
       availableOptions.sort();
       this.categorizedAggregatedOptions[optionKey].available = availableOptions;
-      let unavailable = this.allAggregatedOptions[optionKey].slice(0);
-      let unavailableIdx;
-      for (let availableIdx in availableOptions) {
-        unavailableIdx = unavailable.indexOf(availableOptions[availableIdx]);
-        if (unavailableIdx >= 0) {
-          unavailable.splice(unavailableIdx, 1);
-        }
-      }
-      this.categorizedAggregatedOptions[optionKey].unavailable = unavailable;
-    },
-    updateOptions: function() {
-      let isParamForFilter, isProposalForFilter;
-      let filters = {};
-      for (let p in this.queryParams) {
-        if (this.queryParams[p]) {
-          isParamForFilter = ['site_id', 'telescope_id', 'instrument_id', 'primary_optical_element', 'configuration_type', 'start', 'end', 'public'].indexOf(p) >= 0;
-          // Only add the proposal to the filters if the chosen proposal is a public one as those are the ones that are
-          // populated by the aggregate endpoint. Profile proposals are handled differently.
-          isProposalForFilter = p === 'proposal_id' && this.allAggregatedOptions.proposals.indexOf(this.queryParams[p]) >= 0;
-          if (isParamForFilter || isProposalForFilter) {
-            filters[p] = this.queryParams[p];
-          }
-        }
-      }
-      $.ajax({
-        url: `${this.archiveApiUrl}/frames/aggregate/`,
-        data: filters
-      }).done(response => {
-        this.setOptions('proposals', response.proposals);
-        this.setOptions('obstypes', response.obstypes);
-        this.setOptions('sites', response.sites);
-        this.setOptions('instruments', response.instruments);
-        this.setOptions('filters', response.filters);
-        this.setOptions('telescopes', response.telescopes);
-      }).fail(() => {
-        this.setOptions('proposals', this.allAggregatedOptions.proposals);
-        this.setOptions('obstypes', this.allAggregatedOptions.obstypes);
-        this.setOptions('sites', this.allAggregatedOptions.sites);
-        this.setOptions('instruments', this.allAggregatedOptions.instruments);
-        this.setOptions('filters', this.allAggregatedOptions.filters);
-        this.setOptions('telescopes', this.allAggregatedOptions.telescopes);
-      });
+      this.categorizedAggregatedOptions[optionKey].unavailable = [];
     },
     getAllFiltersAndUpdateOptions: function() {
       $.ajax({
@@ -1020,16 +1010,13 @@ export default {
         this.allAggregatedOptions.telescopes = response.telescopes.sort();
         this.allAggregatedOptions.obstypes = response.obstypes.sort();
         this.allAggregatedOptions.proposals = response.proposals.sort();
-        this.updateOptions();
+        this.setOptions('proposals', this.allAggregatedOptions.proposals);
+        this.setOptions('obstypes', this.allAggregatedOptions.obstypes);
+        this.setOptions('sites', this.allAggregatedOptions.sites);
+        this.setOptions('instruments', this.allAggregatedOptions.instruments);
+        this.setOptions('filters', this.allAggregatedOptions.filters);
+        this.setOptions('telescopes', this.allAggregatedOptions.telescopes);
       });
-    },
-    updateFilters: function() {
-      // Populate all the dropdowns from the aggregate endpoint.
-      if (this.allAggregatedOptions.sites.length < 1) {
-        this.getAllFiltersAndUpdateOptions();
-      } else {
-        this.updateOptions();
-      }
     },
     getSortByFromOrdering: function() {
       // Return what field the data is currently sorted by given the `ordering` field in the query params
