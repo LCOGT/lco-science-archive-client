@@ -26,6 +26,26 @@ export default {
       let now = moment.utc().format('YYYY-MM-DD HH:mm');
       return `${this.$store.state.urls.observationPortalApiUrl}/semesters/?start_lte=${now}`;
     }
-  }
+  },
+  created: function () {
+    // if the route contains a public parameter, honor that
+    if (this.$route.query.public == undefined && this.$route.query.exclude_calibrations == undefined) {
+      let newQueryParams = {...this.$route.query};
+      if (this.$store.state.userIsAuthenticated) {
+        newQueryParams.public = "true";
+        // make sure we set the include_configuration_type correctly based on the DQI setting
+        newQueryParams.exclude_calibrations = this.$store.state.inspectorViewEnabled ? false : true;
+      }
+      else {
+        // anonymous users should only see public data and science data by default
+        newQueryParams.public = "true";
+        newQueryParams.exclude_calibrations = "true";
+      }
+      this.$router.replace({
+        path: this.$route.path,
+        query: newQueryParams
+      });
+    }
+  },
 };
 </script>
