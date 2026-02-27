@@ -62,7 +62,7 @@
       <b-alert v-if="profileError" show variant="danger" dismissible @dismissed="profileError = ''">
         <p>{{ profileError }}</p>
       </b-alert>
-      <router-view class="my-3" />
+      <router-view class="my-3" v-if="!loading"/>
     </b-container>
     <ArchiveFooter
       :copyright-organization="this.$store.state.urls.copyrightOrganization"
@@ -85,7 +85,8 @@ export default {
   },
   data: function() {
     return {
-      profileError: ''
+      profileError: '',
+      loading: true
     };
   },
   computed: {
@@ -119,16 +120,16 @@ export default {
       }
     }
   },
-  created: function () {
-    this.$store
-      .dispatch('getProfileData')
-      .then(() => {
-        this.profileError = '';
-      })
-      .catch((response) => {
-        this.profileError= `Failed to load profile data - ${response.status}: ${response.statusText} - ${response.responseText}`;
-        console.error(this.profileError);
-      });
+  created: async function () {
+    try {
+      await this.$store.dispatch('getProfileData');
+      this.profileError = '';
+    } catch (response) {
+      this.profileError= `Failed to load profile data - ${response.status}: ${response.statusText} - ${response.responseText}`;
+      console.error(this.profileError);
+    } finally {
+      this.loading = false;
+    }
   },
   methods: {
     logout: function() {
