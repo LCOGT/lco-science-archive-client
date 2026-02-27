@@ -5,7 +5,7 @@
         {{ alertModalMessage }}
       </div>
     </b-modal>
-    <b-col :md="sidebarWidth">
+    <b-col md="2">
       <b-form @submit="onSubmit" @reset="onReset">
         <b-form-group id="input-group-daterange" class="my-1">
           <date-picker 
@@ -721,10 +721,6 @@ export default {
     ds9LinkSuffix: function() {
       let archiveToken = localStorage.getItem('archiveToken');
       return '?frame_ids=' + String(this.selected) + '&token=' + archiveToken + '&frame_url=' + this.archiveApiUrl + '/frames/';
-    },
-    sidebarWidth: function() {
-      // make the data inspector sidebar a bit smaller to maximize data table space
-      return this.dataInspectorViewEnabled ? '1.5' : '2';
     },
     expandAllDisabled: function() {
       return this.queryParams.limit > 50

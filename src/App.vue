@@ -55,7 +55,7 @@
         </b-collapse>
       </b-navbar>
     </div>
-    <b-container :fluid="dataInspectorViewEnabled" class="flex-shrink-0 px-5 py-1">
+    <b-container :fluid="dataInspectorViewEnabled" class="flex-shrink-0 px-2 py-1">
       <b-alert v-if="userIsAuthenticatedAndNotMemberOfProposals" variant="info" show dismissible>
         <div>You are not a member of any proposals. Only public data will be shown.</div>
       </b-alert>
