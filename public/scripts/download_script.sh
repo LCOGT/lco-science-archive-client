@@ -1,6 +1,15 @@
 #!/bin/sh
+
+# Locate the best available python interpreter
+PYTHON_EXE=$(command -v python3 || command -v python || command -v python2)
+
+if [ -z "$PYTHON_EXE" ]; then
+    echo "Error: Python interpreter not found." >&2
+    exit 1
+fi
+
 function getJsonVal () {
-    python -c "import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)$1))";
+    $PYTHON_EXE -c "import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)$1))";
 }
 
 frames=(FRAMELIST)
