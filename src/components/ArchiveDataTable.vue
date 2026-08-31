@@ -996,9 +996,6 @@ export default {
       };
       return defaultQueryParams;
     },
-    onSuccessfulDataRetrieval: function() {
-      this.dataErrorMessage = '';
-    },
     onErrorRetrievingData: function(response) {
       if (response.status == 429) {
         this.dataErrorMessage =
@@ -1019,6 +1016,7 @@ export default {
       this.update();
     },
     onSuccessfulDataRetrieval: function() {
+      this.dataErrorMessage = '';
       // if the expand_all param is specified in the query params, make sure we automatically expand all the rows
       if (this.queryParams.expand_all === 'true' && !this.expandAllDisabled) {
         this.expandAll();
