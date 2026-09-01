@@ -997,13 +997,14 @@ export default {
       return defaultQueryParams;
     },
     onErrorRetrievingData: function(response) {
+      // The API returns a 400 with a list of string messages when the chosen ordering requires a more
+      // constrained query than the one that was submitted.
+      let apiErrorMessages = _.filter(_.castArray(response.responseJSON), _.isString);
       if (response.status == 429) {
         this.dataErrorMessage =
           'Your account has been throttled due to too many requests. Please see https://lco.global/documentation/archive-documentation/#limits';
-      } else if (response.status == 400 && _.isString(response.responseJSON)) {
-        // The API returns a 400 with a plain string message when the chosen ordering requires a more
-        // constrained query than the one that was submitted.
-        this.dataErrorMessage = response.responseJSON;
+      } else if (response.status == 400 && apiErrorMessages.length > 0) {
+        this.dataErrorMessage = apiErrorMessages.join(' ');
       } else {
         this.dataErrorMessage = `There was a problem with your request. Status: ${response.status}. Please contact support.`;
       }
